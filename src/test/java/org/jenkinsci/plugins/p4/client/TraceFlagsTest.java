@@ -75,6 +75,8 @@ class TraceFlagsTest extends DefaultEnvironment {
 
 		assertTrue(logCapture.hasMessage("Applied trace flag: rpc=3"),
 				"Expected trace flag application log message");
+		assertTrue(logCapture.hasMessage("Set P4DEBUG=rpc=3"),
+				"Expected P4DEBUG property to be set");
 	}
 
 	@Test
@@ -94,6 +96,8 @@ class TraceFlagsTest extends DefaultEnvironment {
 		assertTrue(logCapture.hasMessage("Applied trace flag: rpc=3"));
 		assertTrue(logCapture.hasMessage("Applied trace flag: time=1"));
 		assertTrue(logCapture.hasMessage("Applied trace flag: ssl=2"));
+		assertTrue(logCapture.hasMessage("Set P4DEBUG=rpc=3,time=1,ssl=2"),
+				"Expected P4DEBUG property to be set with all flags");
 	}
 
 	@Test
@@ -171,6 +175,8 @@ class TraceFlagsTest extends DefaultEnvironment {
 		assertTrue(logCapture.hasMessage("Applied trace flag: ssl=2"));
 		assertTrue(logCapture.hasMessage("Applied trace flag: net=5"));
 		assertTrue(logCapture.hasMessage("Applied trace flag: time=1"));
+		assertTrue(logCapture.hasMessage("Set P4DEBUG=rpc=3,ssl=2,net=5,time=1"),
+				"Expected P4DEBUG property to be set with all supported flags");
 	}
 
 	@Test
@@ -186,6 +192,8 @@ class TraceFlagsTest extends DefaultEnvironment {
 
 		assertTrue(logCapture.hasMessage("Applied trace flag: rpc=3"));
 		assertTrue(logCapture.hasMessage("Applied trace flag: time=1"));
+		assertTrue(logCapture.hasMessage("Set P4DEBUG=rpc=3,time=1"),
+				"Expected P4DEBUG property to be set with trimmed flags");
 	}
 
 	@Test

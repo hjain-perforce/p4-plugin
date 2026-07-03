@@ -171,7 +171,7 @@ public class ConnectionFactory {
 				try {
 					Integer.parseInt(level);
 				} catch (NumberFormatException e) {
-					traceLogger.warning("Invalid trace level (not an integer) for flag " + flagName + ": \"" + parts[1] + "\"");
+					traceLogger.warning("Invalid trace level (not an integer) for flag " + flagName + ": \"" + level + "\"");
 					continue;
 				}
 
@@ -193,6 +193,8 @@ public class ConnectionFactory {
 			}
 
 			// Set P4DEBUG property if we have valid flags
+			// P4DEBUG is the standard Perforce environment variable name for trace flags
+			// P4Java reads this from the Properties object passed to ServerFactory
 			if (debugFlags.length() > 0) {
 				String p4debug = debugFlags.toString();
 				props.put("P4DEBUG", p4debug);
