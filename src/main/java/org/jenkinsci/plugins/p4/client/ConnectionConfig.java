@@ -15,6 +15,7 @@ public class ConnectionConfig implements Serializable {
 	private final int timeout;
 	private final String p4host;
 	private final String userName;
+	private final String traceFlags;
 
 	public ConnectionConfig(P4BaseCredentials credential) {
 		this.p4port = credential.getFullP4port();
@@ -24,6 +25,7 @@ public class ConnectionConfig implements Serializable {
 		this.timeout = credential.getTimeout();
 		this.p4host = credential.getP4host();
 		this.userName = credential.getUsername();
+		this.traceFlags = credential.getTraceFlags();
 	}
 
 	public String getPort() {
@@ -52,6 +54,10 @@ public class ConnectionConfig implements Serializable {
 
 	public String getUserName() {
 		return userName;
+	}
+
+	public String getTraceFlags() {
+		return traceFlags;
 	}
 
 	public String toString() {

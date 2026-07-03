@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 public class ConnectionFactory {
 
 	private static Logger logger = Logger.getLogger(ConnectionFactory.class.getName());
+	private static Logger traceLogger = Logger.getLogger("org.jenkinsci.plugins.p4.trace");
 
 	private static IOptionsServer currentP4;
 
@@ -132,6 +133,78 @@ public class ConnectionFactory {
 		String serverUri = config.getServerUri();
 		IOptionsServer iServer = ServerFactory.getOptionsServer(serverUri, props, opts);
 		iServer.setUserName(config.getUserName());
+
+		// Apply trace flags if configured
+		applyTraceFlags(iServer, config);
+
 		return iServer;
+	}
+
+	private static void applyTraceFlags(IOptionsServer iServer, ConnectionConfig config) {
+		String traceFlags = config.getTraceFlags();
+		if (traceFlags == null || traceFlags.trim().isEmpty()) {
+			return;
+		}
+
+		try {
+			// Parse trace flags: format is "flag=level,flag2=level2" e.g., "rpc=3,time=1"
+			// Initialize all trace levels to 0
+			int rpcLevel = 0;
+			int sslLevel = 0;
+			int netLevel = 0;
+			int timeLevel = 0;
+
+			String[] flags = traceFlags.split(",");
+			for (String flag : flags) {
+				flag = flag.trim();
+				if (flag.isEmpty()) {
+					continue;
+				}
+
+				String[] parts = flag.split("=");
+				if (parts.length != 2) {
+					traceLogger.warning("Invalid trace flag format (expected flag=level): " + flag);
+					continue;
+				}
+
+				String flagName = parts[0].trim().toLowerCase();
+				int level;
+				try {
+					level = Integer.parseInt(parts[1].trim());
+				} catch (NumberFormatException e) {
+					traceLogger.warning("Invalid trace level (not an integer) for flag " + flagName + ": " + parts[1]);
+					continue;
+				}
+
+				// Store the trace level for each flag type
+				switch (flagName) {
+					case "rpc":
+						rpcLevel = level;
+						traceLogger.info("Applied trace flag: rpc=" + level);
+						break;
+					case "ssl":
+						sslLevel = level;
+						traceLogger.info("Applied trace flag: ssl=" + level);
+						break;
+					case "net":
+						netLevel = level;
+						traceLogger.info("Applied trace flag: net=" + level);
+						break;
+					case "time":
+						timeLevel = level;
+						traceLogger.info("Applied trace flag: time=" + level);
+						break;
+					default:
+						traceLogger.warning("Unknown trace flag (supported: rpc, ssl, net, time): " + flagName);
+				}
+			}
+
+			// Apply all trace protocols in a single call
+			if (rpcLevel > 0 || sslLevel > 0 || netLevel > 0 || timeLevel > 0) {
+				iServer.setTraceProtocols(rpcLevel, sslLevel, netLevel, timeLevel);
+			}
+		} catch (Exception e) {
+			traceLogger.warning("Error applying trace flags (continuing without trace): " + e.getMessage());
+		}
 	}
 }
