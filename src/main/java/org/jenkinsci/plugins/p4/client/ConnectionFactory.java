@@ -102,7 +102,7 @@ public class ConnectionFactory {
 
 	private static IOptionsServer getRawConnection(ConnectionConfig config)
 			throws Exception {
-		Properties props = System.getProperties();
+		Properties props = new Properties(System.getProperties());
 
 		// Identify ourselves in server log files.
 		Identifier id = new Identifier();
@@ -122,6 +122,9 @@ public class ConnectionFactory {
 
 		props.put(RpcPropertyDefs.RPC_SECURE_SOCKET_ENABLED_PROTOCOLS_NICK, "TLSv1.3,TLSv1.2");
 
+		// Apply trace flags if configured
+		applyTraceFlags(props, config);
+
 		// Set P4HOST if defined
 		UsageOptions opts = new UsageOptions(props);
 		String p4host = config.getP4Host();
@@ -134,13 +137,10 @@ public class ConnectionFactory {
 		IOptionsServer iServer = ServerFactory.getOptionsServer(serverUri, props, opts);
 		iServer.setUserName(config.getUserName());
 
-		// Apply trace flags if configured
-		applyTraceFlags(iServer, config);
-
 		return iServer;
 	}
 
-	private static void applyTraceFlags(IOptionsServer iServer, ConnectionConfig config) {
+	private static void applyTraceFlags(Properties props, ConnectionConfig config) {
 		String traceFlags = config.getTraceFlags();
 		if (traceFlags == null || traceFlags.trim().isEmpty()) {
 			return;
@@ -148,11 +148,8 @@ public class ConnectionFactory {
 
 		try {
 			// Parse trace flags: format is "flag=level,flag2=level2" e.g., "rpc=3,time=1"
-			// Initialize all trace levels to 0
-			int rpcLevel = 0;
-			int sslLevel = 0;
-			int netLevel = 0;
-			int timeLevel = 0;
+			// Build P4DEBUG environment variable format
+			StringBuilder debugFlags = new StringBuilder();
 
 			String[] flags = traceFlags.split(",");
 			for (String flag : flags) {
@@ -168,40 +165,38 @@ public class ConnectionFactory {
 				}
 
 				String flagName = parts[0].trim().toLowerCase();
-				int level;
+				String level = parts[1].trim();
+
+				// Validate level is numeric
 				try {
-					level = Integer.parseInt(parts[1].trim());
+					Integer.parseInt(level);
 				} catch (NumberFormatException e) {
 					traceLogger.warning("Invalid trace level (not an integer) for flag " + flagName + ": \"" + parts[1] + "\"");
 					continue;
 				}
 
-				// Store the trace level for each flag type
+				// Build trace flag string (supported: rpc, ssl, net, time)
 				switch (flagName) {
 					case "rpc":
-						rpcLevel = level;
-						traceLogger.info("Applied trace flag: rpc=" + level);
-						break;
 					case "ssl":
-						sslLevel = level;
-						traceLogger.info("Applied trace flag: ssl=" + level);
-						break;
 					case "net":
-						netLevel = level;
-						traceLogger.info("Applied trace flag: net=" + level);
-						break;
 					case "time":
-						timeLevel = level;
-						traceLogger.info("Applied trace flag: time=" + level);
+						if (debugFlags.length() > 0) {
+							debugFlags.append(",");
+						}
+						debugFlags.append(flagName).append("=").append(level);
+						traceLogger.info("Applied trace flag: " + flagName + "=" + level);
 						break;
 					default:
 						traceLogger.warning("Unknown trace flag (supported: rpc, ssl, net, time): " + flagName);
 				}
 			}
 
-			// Apply all trace protocols in a single call
-			if (rpcLevel > 0 || sslLevel > 0 || netLevel > 0 || timeLevel > 0) {
-				iServer.setTraceProtocols(rpcLevel, sslLevel, netLevel, timeLevel);
+			// Set P4DEBUG property if we have valid flags
+			if (debugFlags.length() > 0) {
+				String p4debug = debugFlags.toString();
+				props.put("P4DEBUG", p4debug);
+				traceLogger.info("Set P4DEBUG=" + p4debug);
 			}
 		} catch (Exception e) {
 			traceLogger.warning("Error applying trace flags (continuing without trace): " + e.getMessage());
