@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.p4.client;
 
+import com.perforce.p4java.impl.mapbased.server.Server;
 import com.perforce.p4java.server.IOptionsServer;
 
 import java.util.ArrayList;
@@ -40,10 +41,17 @@ public class TraceHelper {
 				log.warning(warning);
 			}
 
+			if (result.getFlags().isEmpty()) {
+				return;
+			}
+
+			// Cast to Server implementation to access setServerProtocolDebugLevel
+			Server serverImpl = (Server) server;
+
 			for (Map.Entry<String, Integer> entry : result.getFlags().entrySet()) {
 				String protocol = entry.getKey();
 				int level = entry.getValue();
-				server.setTrace(protocol, level);
+				serverImpl.setServerProtocolDebugLevel(protocol, level);
 				log.fine("Applied trace flag: " + protocol + "=" + level);
 			}
 		} catch (Exception e) {
