@@ -51,6 +51,14 @@ public abstract class P4BaseCredentials extends BaseStandardCredentials implemen
 		this.sessionLife = sessionLife;
 	}
 
+	@CheckForNull
+	private String traceFlags;
+
+	@DataBoundSetter
+	public void setTraceFlags(String traceFlags) {
+		this.traceFlags = traceFlags;
+	}
+
 	/**
 	 * Constructor.
 	 *
@@ -155,5 +163,10 @@ public abstract class P4BaseCredentials extends BaseStandardCredentials implemen
 
 	public long getSessionLife() {
 		return sessionLife;
+	}
+
+	@CheckForNull
+	public String getTraceFlags() {
+		return traceFlags;
 	}
 }
