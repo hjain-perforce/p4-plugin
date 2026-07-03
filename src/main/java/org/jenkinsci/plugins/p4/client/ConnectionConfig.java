@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 public class ConnectionConfig implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
 	private final String p4port;
 	private final boolean ssl;
@@ -66,18 +66,45 @@ public class ConnectionConfig implements Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof ConnectionConfig) {
-			ConnectionConfig comp = (ConnectionConfig) obj;
-			return this.toString().equals(comp.toString());
-		} else {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof ConnectionConfig)) {
 			return false;
 		}
+		ConnectionConfig comp = (ConnectionConfig) obj;
+
+		if (ssl != comp.ssl || timeout != comp.timeout) {
+			return false;
+		}
+		if (!p4port.equals(comp.p4port)) {
+			return false;
+		}
+		if (!serverUri.equals(comp.serverUri)) {
+			return false;
+		}
+		if (trust != null ? !trust.equals(comp.trust) : comp.trust != null) {
+			return false;
+		}
+		if (p4host != null ? !p4host.equals(comp.p4host) : comp.p4host != null) {
+			return false;
+		}
+		if (!userName.equals(comp.userName)) {
+			return false;
+		}
+		return traceFlags != null ? traceFlags.equals(comp.traceFlags) : comp.traceFlags == null;
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = 7;
-		hash = (int) (1777 * hash + this.toString().hashCode());
-		return hash;
+		int result = p4port.hashCode();
+		result = 31 * result + (ssl ? 1 : 0);
+		result = 31 * result + serverUri.hashCode();
+		result = 31 * result + (trust != null ? trust.hashCode() : 0);
+		result = 31 * result + timeout;
+		result = 31 * result + (p4host != null ? p4host.hashCode() : 0);
+		result = 31 * result + userName.hashCode();
+		result = 31 * result + (traceFlags != null ? traceFlags.hashCode() : 0);
+		return result;
 	}
 }

@@ -172,7 +172,7 @@ public class ConnectionFactory {
 				try {
 					level = Integer.parseInt(parts[1].trim());
 				} catch (NumberFormatException e) {
-					traceLogger.warning("Invalid trace level (not an integer) for flag " + flagName + ": " + parts[1]);
+					traceLogger.warning("Invalid trace level (not an integer) for flag " + flagName + ": \"" + parts[1] + "\"");
 					continue;
 				}
 
