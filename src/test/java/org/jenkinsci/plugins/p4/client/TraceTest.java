@@ -58,69 +58,68 @@ class TraceTest extends DefaultEnvironment {
 
 	@Test
 	void testParseTraceFlags_Valid() {
-		Map<String, Integer> flags = TraceHelper.parseTraceFlags("rpc=3,time=1");
+		TraceHelper.ParseResult result = TraceHelper.parseTraceFlags("rpc=3,time=1");
+		Map<String, Integer> flags = result.getFlags();
 		assertEquals(2, flags.size());
 		assertEquals(Integer.valueOf(3), flags.get("rpc"));
 		assertEquals(Integer.valueOf(1), flags.get("time"));
+		assertTrue(result.getWarnings().isEmpty());
 	}
 
 	@Test
 	void testParseTraceFlags_Semicolon() {
-		Map<String, Integer> flags = TraceHelper.parseTraceFlags("rpc=3;time=1;ssl=2");
+		TraceHelper.ParseResult result = TraceHelper.parseTraceFlags("rpc=3;time=1;ssl=2");
+		Map<String, Integer> flags = result.getFlags();
 		assertEquals(3, flags.size());
 		assertEquals(Integer.valueOf(3), flags.get("rpc"));
 		assertEquals(Integer.valueOf(1), flags.get("time"));
 		assertEquals(Integer.valueOf(2), flags.get("ssl"));
+		assertTrue(result.getWarnings().isEmpty());
 	}
 
 	@Test
 	void testParseTraceFlags_Whitespace() {
-		Map<String, Integer> flags = TraceHelper.parseTraceFlags(" rpc = 3 , time = 1 ");
+		TraceHelper.ParseResult result = TraceHelper.parseTraceFlags(" rpc = 3 , time = 1 ");
+		Map<String, Integer> flags = result.getFlags();
 		assertEquals(2, flags.size());
 		assertEquals(Integer.valueOf(3), flags.get("rpc"));
 		assertEquals(Integer.valueOf(1), flags.get("time"));
+		assertTrue(result.getWarnings().isEmpty());
 	}
 
 	@Test
 	void testParseTraceFlags_Empty() {
-		Map<String, Integer> flags = TraceHelper.parseTraceFlags("");
-		assertTrue(flags.isEmpty());
+		TraceHelper.ParseResult result = TraceHelper.parseTraceFlags("");
+		assertTrue(result.getFlags().isEmpty());
+		assertTrue(result.getWarnings().isEmpty());
 
-		flags = TraceHelper.parseTraceFlags(null);
-		assertTrue(flags.isEmpty());
+		result = TraceHelper.parseTraceFlags(null);
+		assertTrue(result.getFlags().isEmpty());
+		assertTrue(result.getWarnings().isEmpty());
 
-		flags = TraceHelper.parseTraceFlags("   ");
-		assertTrue(flags.isEmpty());
+		result = TraceHelper.parseTraceFlags("   ");
+		assertTrue(result.getFlags().isEmpty());
+		assertTrue(result.getWarnings().isEmpty());
 	}
 
 	@Test
 	void testParseTraceFlags_InvalidFormat() {
-		TestHandler handler = new TestHandler();
-		Logger tracelog = Logger.getLogger(TraceHelper.class.getName());
-		tracelog.addHandler(handler);
-		tracelog.setLevel(Level.WARNING);
-
-		Map<String, Integer> flags = TraceHelper.parseTraceFlags("invalid!!!,rpc=3");
+		TraceHelper.ParseResult result = TraceHelper.parseTraceFlags("invalid!!!,rpc=3");
+		Map<String, Integer> flags = result.getFlags();
 		assertEquals(1, flags.size());
 		assertEquals(Integer.valueOf(3), flags.get("rpc"));
-		assertThat(handler.getLogBuffer(), containsString("Invalid trace flag format"));
-
-		tracelog.removeHandler(handler);
+		assertEquals(1, result.getWarnings().size());
+		assertThat(result.getWarnings().get(0), containsString("Invalid trace flag format"));
 	}
 
 	@Test
 	void testParseTraceFlags_InvalidLevel() {
-		TestHandler handler = new TestHandler();
-		Logger tracelog = Logger.getLogger(TraceHelper.class.getName());
-		tracelog.addHandler(handler);
-		tracelog.setLevel(Level.WARNING);
-
-		Map<String, Integer> flags = TraceHelper.parseTraceFlags("rpc=abc,time=1");
+		TraceHelper.ParseResult result = TraceHelper.parseTraceFlags("rpc=abc,time=1");
+		Map<String, Integer> flags = result.getFlags();
 		assertEquals(1, flags.size());
 		assertEquals(Integer.valueOf(1), flags.get("time"));
-		assertThat(handler.getLogBuffer(), containsString("Invalid trace level"));
-
-		tracelog.removeHandler(handler);
+		assertEquals(1, result.getWarnings().size());
+		assertThat(result.getWarnings().get(0), containsString("Invalid trace level"));
 	}
 
 	@Test
@@ -226,17 +225,21 @@ class TraceTest extends DefaultEnvironment {
 		String logOutput = handler.getLogBuffer();
 		assertThat(logOutput, containsString("Applied trace flag: rpc=3"));
 
-		handler.clear();
+		connLogger.removeHandler(handler);
+
 		credential.setTraceFlags(null);
 		SystemCredentialsProvider.getInstance().save();
+
+		TestHandler handler2 = new TestHandler();
+		connLogger.addHandler(handler2);
 
 		build = project.scheduleBuild2(0, cause).get();
 		assertEquals(Result.SUCCESS, build.getResult());
 
-		logOutput = handler.getLogBuffer();
+		logOutput = handler2.getLogBuffer();
 		assertFalse(logOutput.contains("Applied trace flag"), "No trace flags should be applied after clearing");
 
-		connLogger.removeHandler(handler);
+		connLogger.removeHandler(handler2);
 	}
 
 	@Test

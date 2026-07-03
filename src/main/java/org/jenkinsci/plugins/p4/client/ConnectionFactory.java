@@ -134,9 +134,7 @@ public class ConnectionFactory {
 		iServer.setUserName(config.getUserName());
 
 		// Apply trace flags if configured
-		if (config.getTraceFlags() != null && !config.getTraceFlags().isEmpty()) {
-			TraceHelper.applyTraceFlags(iServer, config.getTraceFlags(), logger);
-		}
+		TraceHelper.applyTraceFlags(iServer, config.getTraceFlags(), logger);
 
 		return iServer;
 	}

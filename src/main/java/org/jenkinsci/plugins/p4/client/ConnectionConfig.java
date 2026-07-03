@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.p4.client;
 import org.jenkinsci.plugins.p4.credentials.P4BaseCredentials;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class ConnectionConfig implements Serializable {
 
@@ -66,18 +67,21 @@ public class ConnectionConfig implements Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof ConnectionConfig) {
-			ConnectionConfig comp = (ConnectionConfig) obj;
-			return this.toString().equals(comp.toString());
-		} else {
-			return false;
-		}
+		if (this == obj) return true;
+		if (!(obj instanceof ConnectionConfig)) return false;
+		ConnectionConfig comp = (ConnectionConfig) obj;
+		return ssl == comp.ssl &&
+				timeout == comp.timeout &&
+				Objects.equals(p4port, comp.p4port) &&
+				Objects.equals(serverUri, comp.serverUri) &&
+				Objects.equals(trust, comp.trust) &&
+				Objects.equals(p4host, comp.p4host) &&
+				Objects.equals(userName, comp.userName) &&
+				Objects.equals(traceFlags, comp.traceFlags);
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = 7;
-		hash = (int) (1777 * hash + this.toString().hashCode());
-		return hash;
+		return Objects.hash(p4port, ssl, serverUri, trust, timeout, p4host, userName, traceFlags);
 	}
 }
