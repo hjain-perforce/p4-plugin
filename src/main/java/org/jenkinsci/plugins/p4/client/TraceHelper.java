@@ -46,6 +46,10 @@ public class TraceHelper {
 			}
 
 			// Cast to Server implementation to access setServerProtocolDebugLevel
+			if (!(server instanceof Server)) {
+				log.warning("Cannot apply trace flags: server is not a Server instance");
+				return;
+			}
 			Server serverImpl = (Server) server;
 
 			for (Map.Entry<String, Integer> entry : result.getFlags().entrySet()) {
@@ -87,7 +91,7 @@ public class TraceHelper {
 				int level = Integer.parseInt(levelStr);
 				flags.put(protocol, level);
 			} catch (NumberFormatException e) {
-				warnings.add("Invalid trace level (not a number): " + levelStr);
+				warnings.add("Invalid trace level (expected integer): " + levelStr);
 			}
 		}
 
