@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.p4.client;
 
+import com.perforce.p4java.Log;
 import com.perforce.p4java.exception.AccessException;
 import com.perforce.p4java.exception.ConnectionException;
 import com.perforce.p4java.exception.P4JavaException;
@@ -17,9 +18,11 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.p4.PerforceScm;
 import org.jenkinsci.plugins.p4.console.P4Logging;
 import org.jenkinsci.plugins.p4.console.P4Progress;
+import org.jenkinsci.plugins.p4.console.P4TraceLogging;
 import org.jenkinsci.plugins.p4.credentials.P4BaseCredentials;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -285,6 +288,9 @@ public class SessionHelper extends CredentialsHelper {
 		ICommandCallback logging = new P4Logging(getListener(), false);
 		this.connection.registerCallback(logging);
 
+		// Apply advanced P4 trace flags (P4JENKINS-175)
+		applyTraceFlags();
+
 		// Check P4IGNORE Environment
 		Server server = (Server) this.connection;
 		if (server.getIgnoreFileName() == null) {
@@ -294,6 +300,34 @@ public class SessionHelper extends CredentialsHelper {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Apply the credential's advanced trace flags to the P4Java connection. When
+	 * flags are configured a {@link P4TraceLogging} callback is registered so the
+	 * requested SSL/RPC/network diagnostics are routed into the Jenkins Logger
+	 * (P4JENKINS-175 AC-1). When no flags are configured, or they have since been
+	 * cleared, any previously registered callback is removed so no trace output is
+	 * produced and behaviour is unchanged (AC-2, AC-3). Any parse/apply failure is
+	 * logged but never aborts the connection (AC-4).
+	 */
+	private void applyTraceFlags() {
+		try {
+			Map<String, Integer> protocols = getCredential().getTraceProtocols();
+			if (protocols.isEmpty()) {
+				// Off by default / flags cleared: disable only our own prior trace
+				// routing, leaving any externally configured callback untouched.
+				if (Log.getLogCallback() instanceof P4TraceLogging) {
+					Log.setLogCallback(null);
+				}
+				return;
+			}
+			int max = Collections.max(protocols.values());
+			Log.setLogCallback(new P4TraceLogging(P4TraceLogging.toTraceLevel(max)));
+			logger.fine("P4: enabled trace flags " + protocols);
+		} catch (Exception e) {
+			logger.warning("P4: unable to apply trace flags: " + e.getMessage());
+		}
 	}
 
 	private boolean isLogin() throws Exception {

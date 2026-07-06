@@ -69,6 +69,10 @@ public class P4PasswordImpl extends P4BaseCredentials implements P4Password {
 			return FormValidation.ok();
 		}
 
+		public FormValidation doCheckTraceFlags(@QueryParameter String value) {
+			return P4BaseCredentials.checkTraceFlags(value);
+		}
+
 		@POST
 		public FormValidation doTestConnection(@QueryParameter("p4port") String p4port,
 		                                       @QueryParameter("ssl") String ssl,
