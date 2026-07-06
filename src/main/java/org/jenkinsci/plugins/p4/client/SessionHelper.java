@@ -48,6 +48,9 @@ public class SessionHelper extends CredentialsHelper {
 
 	private static ConcurrentMap<String, SessionEntry> loginCache = new ConcurrentHashMap<>();
 
+	// Guards the process-global P4Java trace callback (see applyTraceFlags).
+	private static final Object TRACE_LOCK = new Object();
+
 	public SessionHelper(P4BaseCredentials credential, TaskListener listener) throws IOException {
 		super(credential, listener);
 		this.connectionConfig = new ConnectionConfig(getCredential());
@@ -251,7 +254,7 @@ public class SessionHelper extends CredentialsHelper {
 
 			// back off n^2 seconds, before retry
 			try {
-				TimeUnit.SECONDS.sleep(trys ^ 2);
+				TimeUnit.SECONDS.sleep((long) trys * trys);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
@@ -310,20 +313,32 @@ public class SessionHelper extends CredentialsHelper {
 	 * cleared, any previously registered callback is removed so no trace output is
 	 * produced and behaviour is unchanged (AC-2, AC-3). Any parse/apply failure is
 	 * logged but never aborts the connection (AC-4).
+	 * <p>
+	 * P4Java's trace callback ({@link Log#setLogCallback}) is a single global
+	 * verbosity, not per-protocol, so the callback is registered at the highest
+	 * level requested across all configured protocols (e.g. 'rpc=3,time=1' enables
+	 * verbosity 3 for the whole callback). The parsed protocol map still records
+	 * the individual levels for logging/diagnostics.
+	 * <p>
+	 * Because the callback is process-global, the read-modify-write of the current
+	 * callback is guarded by {@link #TRACE_LOCK} so concurrent connections with
+	 * mixed trace configurations do not race when clearing/setting it.
 	 */
 	private void applyTraceFlags() {
 		try {
 			Map<String, Integer> protocols = getCredential().getTraceProtocols();
-			if (protocols.isEmpty()) {
-				// Off by default / flags cleared: disable only our own prior trace
-				// routing, leaving any externally configured callback untouched.
-				if (Log.getLogCallback() instanceof P4TraceLogging) {
-					Log.setLogCallback(null);
+			synchronized (TRACE_LOCK) {
+				if (protocols.isEmpty()) {
+					// Off by default / flags cleared: disable only our own prior trace
+					// routing, leaving any externally configured callback untouched.
+					if (Log.getLogCallback() instanceof P4TraceLogging) {
+						Log.setLogCallback(null);
+					}
+					return;
 				}
-				return;
+				int max = Collections.max(protocols.values());
+				Log.setLogCallback(new P4TraceLogging(P4TraceLogging.toTraceLevel(max)));
 			}
-			int max = Collections.max(protocols.values());
-			Log.setLogCallback(new P4TraceLogging(P4TraceLogging.toTraceLevel(max)));
 			logger.fine("P4: enabled trace flags " + protocols);
 		} catch (Exception e) {
 			logger.warning("P4: unable to apply trace flags: " + e.getMessage());

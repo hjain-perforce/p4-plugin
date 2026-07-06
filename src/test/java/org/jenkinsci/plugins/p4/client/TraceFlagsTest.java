@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WithJenkins
@@ -170,8 +171,9 @@ class TraceFlagsTest extends DefaultEnvironment {
 	}
 
 	@Test
-	void testP4TraceLoggingNullLevelDefaultsToNone() {
-		assertEquals(LogTraceLevel.NONE, new P4TraceLogging(null).getTraceLevel());
+	void testP4TraceLoggingRejectsNullLevel() {
+		// A null level indicates a programming error and must be rejected explicitly.
+		assertThrows(NullPointerException.class, () -> new P4TraceLogging(null));
 	}
 
 	// --- Integration: callback wired into the live connection ---
@@ -187,7 +189,8 @@ class TraceFlagsTest extends DefaultEnvironment {
 			// AC-1: a trace callback is registered on the connection used by the plugin.
 			ILogCallback callback = Log.getLogCallback();
 			assertTrue(callback instanceof P4TraceLogging);
-			// rpc=3 -> SUPERFINE
+			// The global callback uses the highest configured level: max(rpc=3, time=1)
+			// == 3 -> SUPERFINE. Picking min (1 -> COARSE) would fail this assertion.
 			assertEquals(LogTraceLevel.SUPERFINE, callback.getTraceLevel());
 
 			// Running a command through the plugin connection does not throw.

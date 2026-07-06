@@ -1,7 +1,9 @@
 package org.jenkinsci.plugins.p4.console;
 
 import com.perforce.p4java.server.callback.ILogCallback;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,8 +26,8 @@ public class P4TraceLogging implements ILogCallback {
 
 	private final LogTraceLevel traceLevel;
 
-	public P4TraceLogging(LogTraceLevel traceLevel) {
-		this.traceLevel = (traceLevel == null) ? LogTraceLevel.NONE : traceLevel;
+	public P4TraceLogging(@NonNull LogTraceLevel traceLevel) {
+		this.traceLevel = Objects.requireNonNull(traceLevel, "traceLevel");
 	}
 
 	/**
@@ -84,6 +86,31 @@ public class P4TraceLogging implements ILogCallback {
 
 	@Override
 	public void internalTrace(LogTraceLevel traceLevel, String traceMessage) {
-		logger.fine(traceMessage);
+		logger.log(toJulLevel(traceLevel), traceMessage);
+	}
+
+	/**
+	 * Map a P4Java {@link LogTraceLevel} to a {@link java.util.logging.Level} so the
+	 * verbosity distinction between trace calls is preserved in the System Log.
+	 *
+	 * @param level P4Java trace level of the message (may be null)
+	 * @return corresponding java.util.logging level
+	 */
+	private static Level toJulLevel(LogTraceLevel level) {
+		if (level == null) {
+			return Level.FINE;
+		}
+		switch (level) {
+			case COARSE:
+				return Level.INFO;
+			case FINE:
+				return Level.FINE;
+			case SUPERFINE:
+				return Level.FINER;
+			case ALL:
+				return Level.FINEST;
+			default:
+				return Level.FINE;
+		}
 	}
 }

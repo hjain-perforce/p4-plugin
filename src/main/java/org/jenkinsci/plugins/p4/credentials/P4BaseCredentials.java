@@ -20,13 +20,14 @@ public abstract class P4BaseCredentials extends BaseStandardCredentials implemen
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Known P4 trace protocols that may be supplied via the advanced trace flags
-	 * (e.g. '-vssl', '-vrpc', '-vnet', '-vtime' at the command line). Any token
-	 * whose key is not in this set is silently ignored (JENKINS: P4JENKINS-175).
+	 * Known P4 trace protocols that may be supplied via the advanced trace flags,
+	 * matching the SSL, RPC, network and timing subsystems documented in
+	 * help-traceFlags.html (equivalent to the '-vssl', '-vrpc', '-vnet' and
+	 * '-vtime' command line flags). Any token whose key is not in this set is
+	 * silently ignored (P4JENKINS-175).
 	 */
 	private static final Set<String> KNOWN_TRACE_PROTOCOLS = new HashSet<>(Arrays.asList(
-			"ssl", "rpc", "net", "time", "track", "server", "cmd", "db", "diff",
-			"dbstat", "peek", "rpl", "ob", "lbr", "map", "handle", "netdbg"));
+			"ssl", "rpc", "net", "time"));
 	
 	@NonNull
 	private final String p4port;
