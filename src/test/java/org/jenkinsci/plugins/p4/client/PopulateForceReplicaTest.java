@@ -12,7 +12,6 @@ import org.jenkinsci.plugins.p4.workspace.WorkspaceSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
@@ -56,7 +55,6 @@ class PopulateForceReplicaTest extends DefaultEnvironment {
 		createCredentials("jenkins", "jenkins", p4d.getRshPort(), CREDENTIAL);
 	}
 
-	@Issue("P4JENKINS-184")
 	@Test
 	void testForcePopulateReFetchesBypassedFiles() throws Exception {
 		// Submit a handful of files to a fresh folder.
