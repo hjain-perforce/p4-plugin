@@ -424,8 +424,10 @@ public class ClientHelper extends ConnectionHelper {
 		// setServerBypass (-p no have list)
 		syncOpts.setServerBypass(!populate.isHave());
 
-		// setForceUpdate (-f only if no -p is set)
-		syncOpts.setForceUpdate(populate.isForce() && populate.isHave());
+		// setForceUpdate (-f); force applies even with -p so that against a
+		// read-only replica the server's 'already synced' state is ignored and
+		// archive content is re-fetched instead of a silent no-op sync.
+		syncOpts.setForceUpdate(populate.isForce());
 		syncOpts.setQuiet(populate.isQuiet());
 
 		// Sync files with asynchronous callback and parallel if enabled to
