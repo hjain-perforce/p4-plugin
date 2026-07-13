@@ -56,7 +56,7 @@ class PopulateForceReplicaTest extends DefaultEnvironment {
 		createCredentials("jenkins", "jenkins", p4d.getRshPort(), CREDENTIAL);
 	}
 
-	@Issue("JENKINS-184")
+	@Issue("P4JENKINS-184")
 	@Test
 	void testForcePopulateReFetchesBypassedFiles() throws Exception {
 		// Submit a handful of files to a fresh folder.
